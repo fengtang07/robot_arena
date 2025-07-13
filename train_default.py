@@ -18,14 +18,14 @@ env = WarehouseEnv()
 env.reset()
 os.makedirs("models", exist_ok=True)
 
-# These are standard hyperparameters that should result in a decent, but not perfect, agent.
+# ENHANCED: Improved hyperparameters for better navigation learning
 default_params = {
     'learning_rate': 0.0003,
     'n_steps': 2048,
     'batch_size': 64,
     'n_epochs': 10,
     'gamma': 0.99,
-    'total_timesteps': 200000
+    'total_timesteps': 500000  # Increased from 200000 to 500000 for better learning
 }
 
 # --- Start MLflow Run ---

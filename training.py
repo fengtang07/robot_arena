@@ -9,7 +9,6 @@ import warnings
 def train_user_robot(hyperparams, username):
     """
     Train the PPO agent with user-defined hyperparameters and log to MLflow.
-    Falls back to local storage if MLflow is unavailable.
     """
     mlflow_available = False
     
@@ -17,8 +16,6 @@ def train_user_robot(hyperparams, username):
     try:
         import mlflow
         mlflow.set_tracking_uri("http://127.0.0.1:5001")
-        
-        # Test connection with a simple API call
         import requests
         response = requests.get("http://127.0.0.1:5001/api/2.0/mlflow/experiments/list", timeout=10)
         if response.status_code == 200:
@@ -37,16 +34,17 @@ def train_user_robot(hyperparams, username):
             mlflow_run = mlflow.start_run(run_name=f"train_{username}")
             print(f"🔬 Started MLflow run: {mlflow_run.info.run_id}")
             
-            # Log parameters
+            # Log parameters, including new ones
             mlflow.log_params(hyperparams)
             mlflow.set_tag("username", username)
         except Exception as e:
             print(f"⚠️  MLflow logging failed: {e}")
             mlflow_available = False
     
-    # Create environment and model
-    print("🏭 Creating warehouse environment...")
-    env = WarehouseEnv()
+    # Create environment with the user's custom reward settings
+    print("🏭 Creating warehouse environment with custom settings...")
+    # NEW: Pass the reward_config to the environment
+    env = WarehouseEnv(reward_config=hyperparams['reward_config'])
     env.reset()
     
     # Ensure models directory exists
@@ -61,7 +59,8 @@ def train_user_robot(hyperparams, username):
         n_steps=hyperparams['n_steps'],
         batch_size=hyperparams['batch_size'],
         n_epochs=hyperparams['n_epochs'],
-        verbose=1  # Show training progress
+        gamma=hyperparams['gamma'],  # NEW: Pass gamma to the model
+        verbose=1
     )
     
     print(f"🚀 Starting training for {hyperparams['total_timesteps']} timesteps...")
@@ -83,7 +82,6 @@ def train_user_robot(hyperparams, username):
             mlflow.log_metric("training_duration_sec", training_time)
             mlflow.log_artifact(model_path, "model")
             
-            # Log the model with SB3 integration
             mlflow.stable_baselines3.log_model(
                 sb3_model=model,
                 artifact_path=f"user_model_{username}",
@@ -100,13 +98,13 @@ def train_user_robot(hyperparams, username):
         'time_taken': training_time,
         'model_path': model_path,
         'mlflow_logged': mlflow_available
-    } 
+    }
 
 def train_champion_robot():
     """Train the champion robot with improved environment settings"""
     print("🏆 Training Champion Robot with improved environment...")
     
-    # Create environment with improved settings
+    # Create environment with default settings for a fair champion
     env = WarehouseEnv(max_steps=1000)
     
     # Enhanced hyperparameters for better performance
